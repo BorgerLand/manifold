@@ -15,6 +15,7 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -44,13 +45,23 @@ class CrossSection {
    *  Copy / move / assignment
    */
   ///@{
-  CrossSection();
-  ~CrossSection();
+  CrossSection() {}
+  ~CrossSection() {}
 
-  CrossSection(const CrossSection& other);
-  CrossSection& operator=(const CrossSection& other);
-  CrossSection(CrossSection&&) noexcept;
-  CrossSection& operator=(CrossSection&&) noexcept;
+  CrossSection(const CrossSection& other) {
+    std::cout << "CrossSection::CrossSection(const CrossSection&): STUB, not implemented in Rust\n";
+  }
+  CrossSection& operator=(const CrossSection& other) {
+    std::cout << "CrossSection::operator=(const CrossSection&): STUB, not implemented in Rust\n";
+    return *this;
+  }
+  CrossSection(CrossSection&&) noexcept {
+    std::cout << "CrossSection::CrossSection(CrossSection&&): STUB, not implemented in Rust\n";
+  }
+  CrossSection& operator=(CrossSection&&) noexcept {
+    std::cout << "CrossSection::operator=(CrossSection&&): STUB, not implemented in Rust\n";
+    return *this;
+  }
   ///@}
 
   // Adapted from Clipper2 docs:
@@ -84,71 +95,170 @@ class CrossSection {
    */
   ///@{
   CrossSection(const SimplePolygon& contour,
-               FillRule fillrule = FillRule::Positive);
+               FillRule fillrule = FillRule::Positive) {
+    std::cout << "CrossSection::CrossSection(const SimplePolygon&, FillRule): STUB, not implemented in Rust\n";
+  }
   CrossSection(const Polygons& contours,
-               FillRule fillrule = FillRule::Positive);
-  CrossSection(const Rect& rect);
-  Polygons ToPolygons() const;
+               FillRule fillrule = FillRule::Positive) {
+    std::cout << "CrossSection::CrossSection(const Polygons&, FillRule): STUB, not implemented in Rust\n";
+  }
+  CrossSection(const Rect& rect) {
+    std::cout << "CrossSection::CrossSection(const Rect&): STUB, not implemented in Rust\n";
+  }
+  Polygons ToPolygons() const {
+    std::cout << "CrossSection::ToPolygons(): STUB, not implemented in Rust\n";
+    return {};
+  }
   ///@}
 
   /** @name Constructors
    * Topological ops and primitives
    */
   ///@{
-  std::vector<CrossSection> Decompose() const;
-  static CrossSection Compose(const std::vector<CrossSection>&);
-  static CrossSection Square(const vec2 dims, bool center = false);
-  static CrossSection Circle(double radius, int circularSegments = 0);
+  std::vector<CrossSection> Decompose() const {
+    std::cout << "CrossSection::Decompose(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Compose(const std::vector<CrossSection>&) {
+    std::cout << "CrossSection::Compose(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Square(const vec2 dims, bool center = false) {
+    std::cout << "CrossSection::Square(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Circle(double radius, int circularSegments = 0) {
+    std::cout << "CrossSection::Circle(): STUB, not implemented in Rust\n";
+    return {};
+  }
   ///@}
 
   /** @name Information
    *  Details of the cross-section
    */
   ///@{
-  bool IsEmpty() const;
-  size_t NumVert() const;
-  size_t NumContour() const;
-  Rect Bounds() const;
-  double Area() const;
+  bool IsEmpty() const {
+    std::cout << "CrossSection::IsEmpty(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  size_t NumVert() const {
+    std::cout << "CrossSection::NumVert(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  size_t NumContour() const {
+    std::cout << "CrossSection::NumContour(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  Rect Bounds() const {
+    std::cout << "CrossSection::Bounds(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  double Area() const {
+    std::cout << "CrossSection::Area(): STUB, not implemented in Rust\n";
+    return {};
+  }
   ///@}
 
   /** @name Transformation
    */
   ///@{
-  CrossSection Translate(const vec2 v) const;
-  CrossSection Rotate(double degrees) const;
-  CrossSection Scale(const vec2 s) const;
-  CrossSection Mirror(const vec2 ax) const;
-  CrossSection Transform(const mat2x3& m) const;
-  CrossSection Warp(std::function<void(vec2&)> warpFunc) const;
-  CrossSection WarpBatch(std::function<void(VecView<vec2>)> warpFunc) const;
-  CrossSection Simplify(double epsilon = 1e-6) const;
+  CrossSection Translate(const vec2 v) const {
+    std::cout << "CrossSection::Translate(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Rotate(double degrees) const {
+    std::cout << "CrossSection::Rotate(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Scale(const vec2 s) const {
+    std::cout << "CrossSection::Scale(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Mirror(const vec2 ax) const {
+    std::cout << "CrossSection::Mirror(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Transform(const mat2x3& m) const {
+    std::cout << "CrossSection::Transform(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Warp(std::function<void(vec2&)> warpFunc) const {
+    std::cout << "CrossSection::Warp(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection WarpBatch(std::function<void(VecView<vec2>)> warpFunc) const {
+    std::cout << "CrossSection::WarpBatch(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection Simplify(double epsilon = 1e-6) const {
+    std::cout << "CrossSection::Simplify(): STUB, not implemented in Rust\n";
+    return {};
+  }
   CrossSection Offset(double delta, JoinType jt = JoinType::Round,
-                      double miter_limit = 2.0, int circularSegments = 0) const;
+                      double miter_limit = 2.0, int circularSegments = 0) const {
+    std::cout << "CrossSection::Offset(): STUB, not implemented in Rust\n";
+    return {};
+  }
   ///@}
 
   /** @name Boolean
    *  Combine two manifolds
    */
   ///@{
-  CrossSection Boolean(const CrossSection& second, OpType op) const;
+  CrossSection Boolean(const CrossSection& second, OpType op) const {
+    std::cout << "CrossSection::Boolean(): STUB, not implemented in Rust\n";
+    return {};
+  }
   static CrossSection BatchBoolean(
-      const std::vector<CrossSection>& crossSections, OpType op);
-  CrossSection operator+(const CrossSection&) const;
-  CrossSection& operator+=(const CrossSection&);
-  CrossSection operator-(const CrossSection&) const;
-  CrossSection& operator-=(const CrossSection&);
-  CrossSection operator^(const CrossSection&) const;
-  CrossSection& operator^=(const CrossSection&);
+      const std::vector<CrossSection>& crossSections, OpType op) {
+    std::cout << "CrossSection::BatchBoolean(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection operator+(const CrossSection&) const {
+    std::cout << "CrossSection::operator+(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection& operator+=(const CrossSection&) {
+    std::cout << "CrossSection::operator+=(): STUB, not implemented in Rust\n";
+    return *this;
+  }
+  CrossSection operator-(const CrossSection&) const {
+    std::cout << "CrossSection::operator-(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection& operator-=(const CrossSection&) {
+    std::cout << "CrossSection::operator-=(): STUB, not implemented in Rust\n";
+    return *this;
+  }
+  CrossSection operator^(const CrossSection&) const {
+    std::cout << "CrossSection::operator^(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  CrossSection& operator^=(const CrossSection&) {
+    std::cout << "CrossSection::operator^=(): STUB, not implemented in Rust\n";
+    return *this;
+  }
   ///@}
 
   /** @name Convex Hull
    */
   ///@{
-  CrossSection Hull() const;
-  static CrossSection Hull(const std::vector<CrossSection>& crossSections);
-  static CrossSection Hull(const SimplePolygon pts);
-  static CrossSection Hull(const Polygons polys);
+  CrossSection Hull() const {
+    std::cout << "CrossSection::Hull(): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Hull(const std::vector<CrossSection>& crossSections) {
+    std::cout << "CrossSection::Hull(std::vector<CrossSection>&): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Hull(const SimplePolygon pts) {
+    std::cout << "CrossSection::Hull(SimplePolygon): STUB, not implemented in Rust\n";
+    return {};
+  }
+  static CrossSection Hull(const Polygons polys) {
+    std::cout << "CrossSection::Hull(Polygons): STUB, not implemented in Rust\n";
+    return {};
+  }
   ///@}
 
  private:

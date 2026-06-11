@@ -53,9 +53,37 @@ using PolygonsIdx = std::vector<SimplePolygonIdx>;
  *  @{
  */
 std::vector<ivec3> TriangulateIdx(const PolygonsIdx& polys, double epsilon = -1,
-                                  bool allowConvex = true);
+                                  bool allowConvex = true) {
+  using RustPolyVert = rust::meshbool::polygon::PolyVert;
+  using RustPoint2 = rust::nalgebra::Point2<double>;
+  auto new_p = ::rust::std::vec::Vec<::rust::std::vec::Vec<RustPolyVert>>::new_();
+  for (const auto& poly : polys) {
+    auto new_p_sub = ::rust::std::vec::Vec<RustPolyVert>::new_();
+    for (const auto& v : poly) {
+      new_p_sub.push(RustPolyVert::new_(
+          RustPoint2::new_(v.pos.x, v.pos.y), (uint32_t)v.idx));
+    }
+    new_p.push(std::move(new_p_sub));
+  }
+  auto result = rust::meshbool::polygon::triangulate_idx(new_p, epsilon, rust::Bool(allowConvex));
+  std::vector<ivec3> out;
+  for (size_t i = 0; i < result.len(); i++) {
+    auto t = result.get(i).unwrap();
+    out.push_back({(int)t.get_x(), (int)t.get_y(), (int)t.get_z()});
+  }
+  return out;
+}
 
 std::vector<ivec3> Triangulate(const Polygons& polygons, double epsilon = -1,
-                               bool allowConvex = true);
+                               bool allowConvex = true) {
+  auto rs = CPPPolygonsToRSPolygons(polygons);
+  auto result = rust::meshbool::polygon::triangulate(rs, epsilon, rust::Bool(allowConvex));
+  std::vector<ivec3> out;
+  for (size_t i = 0; i < result.len(); i++) {
+    auto t = result.get(i).unwrap();
+    out.push_back({(int)t.get_x(), (int)t.get_y(), (int)t.get_z()});
+  }
+  return out;
+}
 /** @} */
 }  // namespace manifold

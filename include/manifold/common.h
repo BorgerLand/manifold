@@ -16,6 +16,7 @@
 #include <cmath>
 #include <functional>
 #include <limits>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -26,6 +27,7 @@
 
 #include "./math.h"
 #include "linalg.h"
+#include "../../../generated/test.h"
 
 namespace manifold {
 
@@ -153,6 +155,38 @@ using SimplePolygon = std::vector<vec2>;
  * [&epsilon;-valid](https://github.com/elalish/manifold/wiki/Manifold-Library#definition-of-%CE%B5-valid).
  */
 using Polygons = std::vector<SimplePolygon>;
+
+// Rust<->C++ polygon conversion helpers
+using RSPolygons =
+    rust::std::vec::Vec<rust::std::vec::Vec<rust::nalgebra::Point2<double>>>;
+inline Polygons RSPolygonsToCPPPolygons(const RSPolygons& polys) {
+  Polygons polys_cpp;
+  polys_cpp.reserve(polys.len());
+  for (size_t i = 0; i < polys.len(); i++) {
+    SimplePolygon polys_sub_cpp;
+    auto vec = polys.get(i).unwrap();
+    polys_sub_cpp.reserve(vec.len());
+    for (size_t j = 0; j < vec.len(); j++) {
+      auto p = vec.get(j).unwrap();
+      polys_sub_cpp.push_back({p.get_x(), p.get_y()});
+    }
+    polys_cpp.push_back(polys_sub_cpp);
+  }
+  return polys_cpp;
+}
+inline RSPolygons CPPPolygonsToRSPolygons(const Polygons& polys) {
+  using RustPoint2 = rust::nalgebra::Point2<double>;
+  auto polys_rs =
+      ::rust::std::vec::Vec<::rust::std::vec::Vec<RustPoint2>>::new_();
+  for (const auto& vec : polys) {
+    auto polys_sub_rs = ::rust::std::vec::Vec<RustPoint2>::new_();
+    for (const auto& p : vec) {
+      polys_sub_rs.push(RustPoint2::new_(p.x, p.y));
+    }
+    polys_rs.push(std::move(polys_sub_rs));
+  }
+  return polys_rs;
+}
 
 /**
  * @brief Defines which edges to sharpen and how much for the Manifold.Smooth()
@@ -673,11 +707,21 @@ constexpr double DEFAULT_LENGTH = 1.0;
  */
 class Quality {
  public:
-  static void SetMinCircularAngle(double angle);
-  static void SetMinCircularEdgeLength(double length);
-  static void SetCircularSegments(int number);
-  static int GetCircularSegments(double radius);
-  static void ResetToDefaults();
+  static void SetMinCircularAngle(double angle) {
+    std::cout << "Quality::SetMinCircularAngle(): STUB, not implemented in Rust\n";
+  }
+  static void SetMinCircularEdgeLength(double length) {
+    std::cout << "Quality::SetMinCircularEdgeLength(): STUB, not implemented in Rust\n";
+  }
+  static void SetCircularSegments(int number) {
+    std::cout << "Quality::SetCircularSegments(): STUB, not implemented in Rust\n";
+  }
+  static int GetCircularSegments(double radius) {
+    return (int)rust::meshbool::common::Quality::get_circular_segments(radius);
+  }
+  static void ResetToDefaults() {
+    std::cout << "Quality::ResetToDefaults(): STUB, not implemented in Rust\n";
+  }
 };
 /** @} */
 
@@ -693,24 +737,78 @@ class Quality {
 struct ExecutionParams {
   /// Perform extra sanity checks and assertions on the intermediate data
   /// structures.
-  bool intermediateChecks = false;
+  struct IntermediateChecks {
+    operator bool() const {
+      return rust::meshbool::test::get_intermediate_checks();
+    }
+    bool operator=(bool value) {
+      rust::meshbool::test::set_intermediate_checks(rust::Bool(value));
+      return value;
+    }
+  } intermediateChecks;
+
   /// Perform 3D mesh self-intersection test on intermediate boolean results to
   /// test for ϵ-validity. For debug purposes only.
-  bool selfIntersectionChecks = false;
+  struct SelfIntersectionChecks {
+    operator bool() const {
+      return rust::meshbool::test::get_self_intersection_checks();
+    }
+    bool operator=(bool value) {
+      rust::meshbool::test::set_self_intersection_checks(rust::Bool(value));
+      return value;
+    }
+  } selfIntersectionChecks;
+
   /// If processOverlaps is false, a geometric check will be performed to assert
   /// all triangles are CCW.
-  bool processOverlaps = true;
+  struct ProcessOverlaps {
+    operator bool() const {
+      return rust::meshbool::test::get_process_overlaps();
+    }
+    bool operator=(bool value) {
+      rust::meshbool::test::set_process_overlaps(rust::Bool(value));
+      return value;
+    }
+  } processOverlaps;
+
   /// Suppresses printed errors regarding CW triangles. Has no effect if
   /// processOverlaps is true.
-  bool suppressErrors = false;
+  struct SuppressErrors {
+    operator bool() const {
+      std::cout << "ManifoldParams().suppressErrors getter: STUB, not implemented in Rust\n";
+      return false;
+    }
+    bool operator=(bool value) {
+      std::cout << "ManifoldParams().suppressErrors setter: STUB, not implemented in Rust\n";
+      return value;
+    }
+  } suppressErrors;
   /// Deprecated! This value no longer has any effect, as cleanup now only
   /// occurs on intersected triangles.
-  bool cleanupTriangles = true;
+  struct CleanupTriangles {
+    operator bool() const {
+      std::cout << "ManifoldParams().cleanupTriangles getter: STUB, not implemented in Rust\n";
+      return true;
+    }
+    bool operator=(bool value) {
+      std::cout << "ManifoldParams().cleanupTriangles setter: STUB, not implemented in Rust\n";
+      return value;
+    }
+  } cleanupTriangles;
   /// Verbose level:
   /// - 0 for no verbose output
   /// - 1 for Boolean debug dumps on failures and invalid intermediate meshes.
   /// - 2 for Boolean timing and size statistics, plus triangulator action.
-  int verbose = 0;
+  struct Verbose {
+    operator int() const {
+      std::cout << "ManifoldParams().verbose getter: STUB, not implemented in Rust\n";
+      return 0;
+    }
+    int operator=(int value) {
+      std::cout << "ManifoldParams().verbose setter: STUB, not implemented in Rust\n";
+      return value;
+    }
+  } verbose;
 };
 /** @} */
 
