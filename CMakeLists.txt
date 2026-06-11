@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22) #required by corrosion
 project(manifold LANGUAGES CXX)
 
 # Use C++17
@@ -244,7 +244,7 @@ add_subdirectory(bindings)
 if(MANIFOLD_TEST)
   add_subdirectory(samples)
   add_subdirectory(test)
-  add_subdirectory(extras)
+  #add_subdirectory(extras)
 endif()
 
 include(${PROJECT_SOURCE_DIR}/cmake/info.cmake)
@@ -273,59 +273,4 @@ write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/cmake/manifoldConfigVersion.cmake
   VERSION ${MANIFOLD_VERSION}
   COMPATIBILITY SameMajorVersion
-)
-
-# Location of inputs for CMake find_package - see:
-# https://cmake.org/cmake/help/latest/command/find_package.html
-set(EXPORT_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake)
-
-install(
-  EXPORT manifoldTargets
-  NAMESPACE manifold::
-  DESTINATION ${EXPORT_INSTALL_DIR}/manifold
-)
-install(
-  FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/manifoldConfigVersion.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/manifoldConfig.cmake
-  DESTINATION ${EXPORT_INSTALL_DIR}/manifold
-)
-
-# install public headers
-set(
-  MANIFOLD_PUBLIC_HDRS
-  common.h
-  math.h
-  mesh.h
-  linalg.h
-  manifold.h
-  optional_assert.h
-  polygon.h
-  vec_view.h
-  cross_section.h
-)
-list(TRANSFORM MANIFOLD_PUBLIC_HDRS PREPEND include/manifold/)
-list(
-  APPEND
-  MANIFOLD_PUBLIC_HDRS
-  ${CMAKE_CURRENT_BINARY_DIR}/include/manifold/version.h
-)
-
-install(
-  FILES ${MANIFOLD_PUBLIC_HDRS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/manifold
-)
-
-# PkgConfig file
-if(MANIFOLD_PAR)
-  set(TEMPLATE_OPTIONAL_TBB "tbb")
-endif()
-configure_file(
-  cmake/manifold.pc.in
-  ${CMAKE_CURRENT_BINARY_DIR}/manifold.pc
-  @ONLY
-)
-install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/manifold.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )

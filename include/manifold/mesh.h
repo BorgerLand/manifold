@@ -15,12 +15,76 @@
 #pragma once
 
 #include <cstdint>
+#include <iostream>
 #include <type_traits>
 #include <vector>
 
 #include "manifold/common.h"
 
 namespace manifold {
+
+#define MANIFOLD_MESHGL_VECS(X) \
+  X(vert_properties, vertProperties) \
+  X(tri_verts, triVerts) \
+  X(merge_from_vert, mergeFromVert) \
+  X(merge_to_vert, mergeToVert) \
+  X(run_index, runIndex) \
+  X(run_original_id, runOriginalID) \
+  X(run_transform, runTransform) \
+  X(run_flags, runFlags) \
+  X(face_id, faceID)
+
+template <typename RsVec, typename Src>
+inline void CPPVecToRSVec(const Src& src, RsVec&& dst) {
+  using E = std::remove_pointer_t<decltype(dst.as_mut_ptr())>;
+  dst.resize(src.size(), E{});
+  E* p = dst.as_mut_ptr();
+  for (size_t i = 0; i < src.size(); i++) p[i] = static_cast<E>(src[i]);
+}
+
+template <typename Dst, typename RsVec>
+inline void RSVecToCPPVec(const RsVec& src, Dst& dst) {
+  auto* p = src.as_ptr();
+  dst.assign(p, p + src.len());
+}
+
+template <typename T, typename Gl>
+inline void CPPScalarToRSScalar(Gl& gl, size_t offset, T value) {
+  *reinterpret_cast<T*>(::rust::__zngur_internal_data_ptr(gl) + offset) = value;
+}
+
+template <typename Precision, typename I>
+inline auto CPPMeshToRSMesh(const MeshGLP<Precision, I>& m) {
+  auto copy = [&](auto& gl) {
+#define X(rs, cpp) CPPVecToRSVec(m.cpp, gl.rs);
+    MANIFOLD_MESHGL_VECS(X)
+#undef X
+  };
+  if constexpr (std::is_same_v<Precision, float>) {
+    auto gl = rust::meshbool::MeshGL32::default_();
+    CPPScalarToRSScalar<uint32_t>(gl, 216, (uint32_t)m.numProp);
+    CPPScalarToRSScalar<float>(gl, 220, (float)m.tolerance);
+    copy(gl);
+    return gl;
+  } else {
+    auto gl = rust::meshbool::MeshGL64::default_();
+    CPPScalarToRSScalar<uint64_t>(gl, 216, (uint64_t)m.numProp);
+    CPPScalarToRSScalar<double>(gl, 224, (double)m.tolerance);
+    copy(gl);
+    return gl;
+  }
+}
+
+template <typename Precision, typename I, typename RsMesh>
+inline MeshGLP<Precision, I> RSMeshToCPPMesh(const RsMesh& gl) {
+  MeshGLP<Precision, I> out;
+  out.numProp = gl.num_prop;
+  out.tolerance = gl.tolerance;
+#define X(rs, cpp) RSVecToCPPVec(gl.rs, out.cpp);
+  MANIFOLD_MESHGL_VECS(X)
+#undef X
+  return out;
+}
 
 /** @addtogroup Core
  *  @{
@@ -179,7 +243,13 @@ struct MeshGLP {
    * Manifold from the result will report an error status if it is not
    * manifold.
    */
-  bool Merge();
+  inline bool Merge() {
+    auto gl = CPPMeshToRSMesh(*this);
+    bool changed = gl.merge_glp();
+    RSVecToCPPVec(gl.merge_from_vert, mergeFromVert);
+    RSVecToCPPVec(gl.merge_to_vert, mergeToVert);
+    return changed;
+  }
 
   /**
    * Returns the x, y, z position of the ith vertex.
@@ -269,8 +339,14 @@ static_assert(std::is_same<MeshGL, MeshGLP<float, uint32_t>>::value,
               "MeshGL default index type must stay uint32_t");
 
 #ifndef MANIFOLD_NO_IOSTREAM
-MeshGL64 ReadOBJ(std::istream& stream);
-bool WriteOBJ(std::ostream& stream, const MeshGL64& mesh);
+inline MeshGL64 ReadOBJ(std::istream& stream) {
+  std::cout << "ReadOBJ() (mesh.h): STUB, not implemented in Rust\n";
+  return {};
+}
+inline bool WriteOBJ(std::ostream& stream, const MeshGL64& mesh) {
+  std::cout << "WriteOBJ() (mesh.h): STUB, not implemented in Rust\n";
+  return false;
+}
 #endif
 /** @} */
 }  // namespace manifold
