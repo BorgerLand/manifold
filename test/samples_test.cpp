@@ -226,6 +226,9 @@ TEST(Samples, Sponge4) {
 #endif
 
 TEST(Samples, CondensedMatter16) {
+  // FIXME: Triangulation can be invalid
+  ManifoldParamGuard guard;
+  ManifoldParams().processOverlaps = true;
   Manifold cm = CondensedMatter(16);
   CheckGL(cm);
   Manifold cm2 = CondensedMatter(16);

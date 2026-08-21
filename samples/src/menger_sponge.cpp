@@ -46,13 +46,12 @@ Manifold MengerSponge(int n) {
   std::vector<Manifold> holes;
   Fractal(holes, result, 1.0, {0.0, 0.0}, 1, n);
 
-  Manifold hole = Manifold::BatchBoolean(holes, OpType::Add);
-
-  result -= hole;
-  hole = hole.Rotate(90);
-  result -= hole;
-  hole = hole.Rotate(0, 0, 90);
-  result -= hole;
+  Manifold hole_z = Manifold::BatchBoolean(holes, OpType::Add);
+  Manifold hole_x = hole_z.Rotate(90);
+  Manifold hole_y = hole_x.Rotate(0, 0, 90);
+  result -= hole_x;
+  result -= hole_y;
+  result -= hole_z;
 
   // Alternative order causes degenerate triangles
   // Manifold tmp1 = hole.Rotate(90) + hole.Rotate(90).Rotate(0, 0, 90);

@@ -28,7 +28,7 @@ add_library(
 )
 exportlib(manifoldc)
 
-target_link_libraries(manifoldc PRIVATE manifold)
+target_link_libraries(manifoldc PRIVATE manifold manifold_test_helpers)
 
 target_include_directories(
   manifoldc
