@@ -29,7 +29,7 @@ target_sources(samples PUBLIC src/bracelet.cpp src/knot.cpp)
 
 target_include_directories(samples PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(samples PUBLIC manifold)
+target_link_libraries(samples PUBLIC manifold PRIVATE manifold_test_helpers)
 
 target_compile_options(samples PRIVATE ${MANIFOLD_FLAGS})
 
