@@ -46,6 +46,15 @@ using SimplePolygonIdx = std::vector<PolyVert>;
  */
 using PolygonsIdx = std::vector<SimplePolygonIdx>;
 /** @} */
+inline std::vector<ivec3> TrianglesRS2CPP(
+    const ::rust::std::vec::Vec<::rust::nalgebra::Vector3<int32_t>>& result) {
+  std::vector<ivec3> out;
+  for (size_t i = 0; i < result.len(); i++) {
+    auto t = result.get(i).unwrap();
+    out.push_back({(int)t.get_x(), (int)t.get_y(), (int)t.get_z()});
+  }
+  return out;
+}
 
 /** @addtogroup Triangulation
  *  @ingroup Core
@@ -55,7 +64,13 @@ using PolygonsIdx = std::vector<SimplePolygonIdx>;
 std::vector<ivec3> TriangulateIdx(const PolygonsIdx& polys, double epsilon = -1,
                                   bool allowConvex = true);
 
-std::vector<ivec3> Triangulate(const Polygons& polygons, double epsilon = -1,
-                               bool allowConvex = true);
+inline std::vector<ivec3> Triangulate(const Polygons& polygons,
+                                      double epsilon = -1,
+                                      bool allowConvex = true) {
+  auto rs = PolygonsCPP2RS(polygons);
+  return TrianglesRS2CPP(
+      rust::meshbool::triangulation::triangulate(rs, epsilon,
+                                                 rust::Bool(allowConvex)));
+}
 /** @} */
 }  // namespace manifold

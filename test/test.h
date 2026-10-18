@@ -33,9 +33,21 @@ struct MeshSize {
 };
 
 struct ManifoldParamGuard {
-  manifold::ExecutionParams params;
-  ManifoldParamGuard() { params = ManifoldParams(); }
-  ~ManifoldParamGuard() { ManifoldParams() = params; }
+  bool intermediateChecks;
+  bool selfIntersectionChecks;
+  bool verifyNoDegenerates;
+  bool processOverlaps;
+  ManifoldParamGuard()
+      : intermediateChecks(ManifoldParams().intermediateChecks),
+        selfIntersectionChecks(ManifoldParams().selfIntersectionChecks),
+        verifyNoDegenerates(ManifoldParams().verifyNoDegenerates),
+        processOverlaps(ManifoldParams().processOverlaps) {}
+  ~ManifoldParamGuard() {
+    ManifoldParams().intermediateChecks = intermediateChecks;
+    ManifoldParams().selfIntersectionChecks = selfIntersectionChecks;
+    ManifoldParams().verifyNoDegenerates = verifyNoDegenerates;
+    ManifoldParams().processOverlaps = processOverlaps;
+  }
 };
 
 inline double RawSignedArea(const manifold::SimplePolygon& ring) {

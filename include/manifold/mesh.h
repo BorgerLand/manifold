@@ -22,6 +22,69 @@
 
 namespace manifold {
 
+#define MANIFOLD_MESHGL_VECS(X) \
+  X(vert_properties, vertProperties) \
+  X(tri_verts, triVerts) \
+  X(merge_from_vert, mergeFromVert) \
+  X(merge_to_vert, mergeToVert) \
+  X(run_index, runIndex) \
+  X(run_original_id, runOriginalID) \
+  X(run_transform, runTransform) \
+  X(run_flags, runFlags) \
+  X(face_id, faceID)
+
+template <typename RsVec, typename Src>
+inline void VecCPP2RS(const Src& src, RsVec&& dst) {
+  using E = std::remove_pointer_t<decltype(dst.as_mut_ptr())>;
+  dst.resize(src.size(), E{});
+  E* p = dst.as_mut_ptr();
+  for (size_t i = 0; i < src.size(); i++) p[i] = static_cast<E>(src[i]);
+}
+
+template <typename Dst, typename RsVec>
+inline void VecRS2CPP(const RsVec& src, Dst& dst) {
+  auto* p = src.as_ptr();
+  dst.assign(p, p + src.len());
+}
+
+template <typename T, typename Gl>
+inline void ScalarCPP2RS(Gl& gl, size_t offset, T value) {
+  *reinterpret_cast<T*>(::rust::__zngur_internal_data_ptr(gl) + offset) = value;
+}
+
+template <typename Precision, typename I>
+inline auto MeshCPP2RS(const MeshGLP<Precision, I>& m) {
+  auto copy = [&](auto& gl) {
+#define X(rs, cpp) VecCPP2RS(m.cpp, gl.rs);
+    MANIFOLD_MESHGL_VECS(X)
+#undef X
+  };
+  if constexpr (std::is_same_v<Precision, float>) {
+    auto gl = rust::meshbool::test::MeshGL32::default_();
+    ScalarCPP2RS<uint32_t>(gl, 216, (uint32_t)m.numProp);
+    ScalarCPP2RS<float>(gl, 220, (float)m.tolerance);
+    copy(gl);
+    return gl;
+  } else {
+    auto gl = rust::meshbool::test::MeshGL64::default_();
+    ScalarCPP2RS<uint64_t>(gl, 216, (uint64_t)m.numProp);
+    ScalarCPP2RS<double>(gl, 224, (double)m.tolerance);
+    copy(gl);
+    return gl;
+  }
+}
+
+template <typename Precision, typename I, typename RsMesh>
+inline MeshGLP<Precision, I> MeshRS2CPP(const RsMesh& gl) {
+  MeshGLP<Precision, I> out;
+  out.numProp = gl.prop_stride;
+  out.tolerance = gl.tolerance;
+#define X(rs, cpp) VecRS2CPP(gl.rs, out.cpp);
+  MANIFOLD_MESHGL_VECS(X)
+#undef X
+  return out;
+}
+
 /** @addtogroup Core
  *  @{
  */
@@ -179,7 +242,13 @@ struct MeshGLP {
    * Manifold from the result will report an error status if it is not
    * manifold.
    */
-  bool Merge();
+  inline bool Merge() {
+    auto gl = MeshCPP2RS(*this);
+    bool changed = gl.merge_glp();
+    VecRS2CPP(gl.merge_from_vert, mergeFromVert);
+    VecRS2CPP(gl.merge_to_vert, mergeToVert);
+    return changed;
+  }
 
   /**
    * Returns the x, y, z position of the ith vertex.

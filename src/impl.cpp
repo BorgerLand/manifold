@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "impl.h"
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -30,19 +28,12 @@
 #include <sstream>
 #endif
 
-#include "csg_tree.h"
-#include "disjoint_sets.h"
-#include "hashtable.h"
 #include "manifold/manifold.h"
-#include "manifold/optional_assert.h"
-#include "mesh_fixes.h"
-#include "parallel.h"
-#include "shared.h"
-#include "svd.h"
 
 namespace {
 using namespace manifold;
 
+#if 0
 int GetLabels(std::vector<int>& components,
               const Vec<std::pair<int, int>>& edges, int numNodes) {
   DisjointSets uf(numNodes);
@@ -53,6 +44,7 @@ int GetLabels(std::vector<int>& components,
 
   return uf.connectedComponents(components);
 }
+#endif
 
 #ifndef MANIFOLD_NO_IOSTREAM
 template <typename T>
@@ -68,6 +60,7 @@ double FromChars(T buffer) {
 
 namespace manifold {
 
+#if 0
 std::atomic<uint32_t> Manifold::Impl::meshIDCounter_(1);
 
 uint32_t Manifold::Impl::ReserveIDs(uint32_t n) {
@@ -705,6 +698,7 @@ void Manifold::Impl::IncrementMeshIDs() {
                tri.meshID = meshIDold2new.D()[tri.meshID];
              });
 }
+#endif
 
 #ifndef MANIFOLD_NO_IOSTREAM
 static std::ostream& WriteOBJWithEpsilon(std::ostream& stream,
@@ -759,7 +753,7 @@ static std::ostream& WriteOBJWithEpsilon(std::ostream& stream,
   for (size_t i = 0; i < mesh.NumTri(); i++)
     triangles.push_back({mesh.triVerts[3 * i] + 1, mesh.triVerts[3 * i + 1] + 1,
                          mesh.triVerts[3 * i + 2] + 1});
-  sort(triangles.begin(), triangles.end());
+  std::sort(triangles.begin(), triangles.end());
   for (const auto& tri : triangles)
     stream << "f " << tri[0] << " " << tri[1] << " " << tri[2] << std::endl;
   stream << "# ======== end mesh =======" << std::endl;
@@ -833,10 +827,12 @@ MeshGL64 ReadOBJ(std::istream& stream) {
  * This supports reading tolerance and epsilon values from WriteOBJ.
  */
 Manifold Manifold::ReadOBJ(std::istream& stream) {
-  if (!stream.good()) return Invalid();
-  auto [mesh, epsilon] = ReadOBJWithEpsilon(stream);
-  auto impl = std::make_shared<Impl>(mesh);
-  return Manifold(impl);
+  if (!stream.good()) {
+    Manifold invalid;
+    invalid.internal = rust::meshbool::test::MeshBoolTestWrapper::invalid();
+    return invalid;
+  }
+  return Manifold(ReadOBJWithEpsilon(stream).first);
 }
 
 /**
@@ -850,21 +846,13 @@ bool WriteOBJ(std::ostream& stream, const MeshGL64& mesh) {
 }
 
 /**
- * Debugging output using high precision OBJ files with specialized comments
- */
-std::ostream& operator<<(std::ostream& stream, const Manifold::Impl& impl) {
-  MeshGL64 mesh = GetMeshGLImpl<double, uint64_t>(impl, -1);
-  return WriteOBJWithEpsilon(stream, mesh, {impl.epsilon_});
-}
-
-/**
  * Export the mesh to a Wavefront OBJ file in a way that preserves the full
  * 64-bit precision of the vertex positions, as well as storing metadata such as
  * the tolerance and epsilon.
  */
 bool Manifold::WriteOBJ(std::ostream& stream) const {
   if (!stream.good()) return false;
-  stream << *this->GetCsgLeafNode().GetImpl();
+  WriteOBJWithEpsilon(stream, GetMeshGL64(), {GetEpsilon()});
   return true;
 }
 #endif

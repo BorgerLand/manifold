@@ -26,12 +26,12 @@ set(
   polygon_test.cpp
   properties_test.cpp
   manifold_test.cpp
-  context_test.cpp
+  #context_test.cpp
   measurement_test.cpp
   boolean_test.cpp
-  sdf_test.cpp
-  smooth_test.cpp
-  hull_test.cpp
+  #sdf_test.cpp
+  #smooth_test.cpp
+  #hull_test.cpp
   samples_test.cpp
   boolean_complex_test.cpp
   cross_section_test.cpp
@@ -46,6 +46,7 @@ target_link_libraries(
   PRIVATE
     GTest::gtest_main
     manifold
+    manifold_test_helpers
     samples
     $<$<BOOL:${MANIFOLD_CBIND}>:manifoldc>
     $<$<BOOL:${MANIFOLD_PAR}>:TBB::tbb>

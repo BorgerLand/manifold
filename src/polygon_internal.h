@@ -28,115 +28,31 @@
 
 namespace manifold {
 
-struct HalfedgeTriangulation {
-  std::vector<Halfedge> halfedges;
-  size_t contourEnd = 0;
-  double epsilon = -1;
-
-  void AddContours(const PolygonsIdx& polys) {
-    size_t numContourEdges = 0;
-    for (const SimplePolygonIdx& poly : polys) numContourEdges += poly.size();
-    halfedges.reserve(halfedges.size() + numContourEdges);
-    edge2halfedge.reserve(edge2halfedge.size() + numContourEdges);
-    for (const SimplePolygonIdx& poly : polys) {
-      for (size_t i = 0; i < poly.size(); ++i) {
-        const int start = poly[i].idx;
-        const int end = poly[i + 1 < poly.size() ? i + 1 : 0].idx;
-        // Store the exterior contour halfedge, opposite the filled contour.
-        AddHalfedge(end, start);
-      }
-    }
-    contourEnd = halfedges.size();
-  }
-
-  void ReserveTriangles(size_t numTri) {
-    halfedges.reserve(contourEnd + 3 * numTri);
-    edge2halfedge.reserve(edge2halfedge.size() + numTri);
-  }
-
-  void AddTriangle(int first, int second, int third) {
-    AddHalfedge(first, second);
-    AddHalfedge(second, third);
-    AddHalfedge(third, first);
-  }
-
-  size_t NumTri() const { return (halfedges.size() - contourEnd) / 3; }
+class HalfedgeTriangulation {
+ public:
+  explicit HalfedgeTriangulation(
+      rust::meshbool::triangulation::HalfedgeTriangulation&& internal)
+      : internal_(std::move(internal)) {}
 
   std::vector<ivec3> Triangles() const {
-    std::vector<ivec3> triangles;
-    triangles.reserve(NumTri());
-    for (size_t edge = contourEnd; edge < halfedges.size(); edge += 3) {
-      triangles.push_back({halfedges[edge].startVert,
-                           halfedges[edge + 1].startVert,
-                           halfedges[edge + 2].startVert});
-    }
-    return triangles;
-  }
-
-  void Finalize() {
-#ifdef MANIFOLD_DEBUG
-    DEBUG_ASSERT(edge2halfedge.empty(), topologyErr,
-                 "triangulation has unpaired halfedges");
-    for (size_t i = 0; i < halfedges.size(); ++i) {
-      const int pair = halfedges[i].pairedHalfedge;
-      DEBUG_ASSERT(pair >= 0 && pair < static_cast<int>(halfedges.size()),
-                   topologyErr, "invalid paired halfedge");
-      DEBUG_ASSERT(halfedges[pair].pairedHalfedge == static_cast<int>(i),
-                   topologyErr, "halfedge pair is not reciprocal");
-      DEBUG_ASSERT(halfedges[i].startVert == halfedges[pair].endVert &&
-                       halfedges[i].endVert == halfedges[pair].startVert,
-                   topologyErr, "halfedge pair endpoints do not match");
-    }
-#endif
-    edge2halfedge.clear();
-    edge2halfedge.rehash(0);
+    return TrianglesRS2CPP(internal_.triangles());
   }
 
  private:
-  std::unordered_map<uint64_t, std::vector<int>> edge2halfedge;
-
-  static uint64_t EdgeKey(int start, int end) {
-    return (uint64_t{static_cast<uint32_t>(start)} << 32) |
-           static_cast<uint32_t>(end);
-  }
-
-  void AddHalfedge(int start, int end) {
-    const int halfedge = halfedges.size();
-    Halfedge data = {start, end, -1, -1};
-    auto reverse = edge2halfedge.find(EdgeKey(end, start));
-    if (reverse != edge2halfedge.end() && !reverse->second.empty()) {
-      data.pairedHalfedge = reverse->second.back();
-      halfedges[data.pairedHalfedge].pairedHalfedge = halfedge;
-      reverse->second.pop_back();
-      if (reverse->second.empty()) edge2halfedge.erase(reverse);
-    } else {
-      edge2halfedge[EdgeKey(start, end)].push_back(halfedge);
-    }
-    halfedges.push_back(data);
-  }
+  rust::meshbool::triangulation::HalfedgeTriangulation internal_;
 };
 
 // Reuses ear-clipping scratch allocations across sequential calls.
-class PolygonTriangulator {
- public:
-  PolygonTriangulator();
-  ~PolygonTriangulator();
-
-  PolygonTriangulator(const PolygonTriangulator&) = delete;
-  PolygonTriangulator& operator=(const PolygonTriangulator&) = delete;
-
-  HalfedgeTriangulation Triangulate(const PolygonsIdx& polys, double epsilon);
-  double GetPrecision() const;
-
- private:
-  struct Impl;
-  std::unique_ptr<Impl> impl_;
-};
+using PolygonTriangulator = rust::meshbool::test::PolygonTriangulator;
 
 // Supplies one reusable triangulator per worker in parallel builds and one per
 // operation in sequential builds.
 class PolygonTriangulatorStore {
  public:
+  PolygonTriangulatorStore()
+      : store_(PolygonTriangulator::default_())
+  {
+  }
   PolygonTriangulator& local() {
 #if MANIFOLD_PAR == 1
     return store_.local();
@@ -157,8 +73,25 @@ HalfedgeTriangulation TriangulateIdxHalfedges(const PolygonsIdx& polys,
                                               double epsilon = -1,
                                               bool allowConvex = true);
 
-HalfedgeTriangulation TriangulateIdxHalfedges(
+inline HalfedgeTriangulation TriangulateIdxHalfedges(
     const PolygonsIdx& polys, double epsilon, bool allowConvex,
-    PolygonTriangulator& triangulator);
+    PolygonTriangulator& triangulator) {
+  using RustPolyVert = rust::meshbool::triangulation::PolyVert;
+  using RustPoint2 = rust::nalgebra::Point2<double>;
+
+  auto rs = ::rust::std::vec::Vec<::rust::std::vec::Vec<RustPolyVert>>::new_();
+  for (const auto& poly : polys) {
+    auto rs_sub = ::rust::std::vec::Vec<RustPolyVert>::new_();
+    for (const auto& v : poly) {
+      rs_sub.push(RustPolyVert::new_(
+          RustPoint2::new_(v.pos.x, v.pos.y), (uint32_t)v.idx));
+    }
+    rs.push(std::move(rs_sub));
+  }
+
+  return HalfedgeTriangulation(
+      rust::meshbool::test::triangulate_idx_halfedges_reuse(
+          rs, epsilon, rust::Bool(allowConvex), triangulator));
+}
 
 }  // namespace manifold
